@@ -46,7 +46,7 @@ const ToolsCards = ({
       <div style={{ height: '100%', overflowY: 'auto', paddingRight: '10px' }}>
         {
           toolsMetadata.map((metadata, i) => {
-            if (developerMode ? developerMode : metadata.name === "wordAlignment") {
+            if (developerMode || metadata.name === "wordAlignment") {
               return (
                 <ToolCard
                   key={i}
