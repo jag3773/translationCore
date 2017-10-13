@@ -90,7 +90,7 @@ return groupsIndex;
 
 export function copyGroupsDataToProjectResources(currentToolName, groupsDataDirectory, bookAbbreviation) {
   const languageId = 'en';
-  const version = currentToolName === 'translationWords' ? 'v6' : 'V0';
+  const version = currentToolName === 'translationWords' ? 'v6' : 'v0';
   const groupsFolderPath = currentToolName === 'translationWords' ? path.join('kt', 'groups', bookAbbreviation) : path.join('groups', bookAbbreviation);
   const groupsDataSourcePath = path.join(USER_RESOURCES_PATH, languageId, 'translationHelps', currentToolName, version, groupsFolderPath);
 
