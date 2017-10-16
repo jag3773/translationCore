@@ -4,13 +4,14 @@ import isEqual from 'lodash/isEqual';
 import * as WordAlignmentLoadActions from './WordAlignmentLoadActions';
 // helpers
 import * as WordAlignmentHelpers from '../helpers/WordAlignmentHelpers';
+import * as stringHelpers from '../helpers/stringHelpers';
 
 /**
  * moves a source word object to a target box object.
  * @param {Number} DropBoxItemIndex - index of the target box or greek box item.
  * @param {object} wordBankItem - object of the source item being drop in the target box.
  */
-export function moveWordBankItemToAlignment(newAlignmentIndex, wordBankItem) {
+export const moveWordBankItemToAlignment = (newAlignmentIndex, wordBankItem) => {
   return ((dispatch, getState) => {
     const {
       wordAlignmentReducer: {
@@ -29,7 +30,6 @@ export function moveWordBankItemToAlignment(newAlignmentIndex, wordBankItem) {
     let _alignmentData = JSON.parse(JSON.stringify(alignmentData));
     let {alignments, wordBank} = _alignmentData[chapter][verse];
     const currentVerse = targetLanguage[chapter][verse];
-
     if (typeof wordBankItem.alignmentIndex === 'number') {
       alignments = removeWordBankItemFromAlignments(wordBankItem, alignments);
     }
@@ -40,12 +40,12 @@ export function moveWordBankItemToAlignment(newAlignmentIndex, wordBankItem) {
 
     dispatch(WordAlignmentLoadActions.updateAlignmentData(_alignmentData));
   });
-}
+};
 /**
  * @description Moves an item from the drop zone area to the word bank area.
  * @param {Object} wordBankItem
  */
-export function moveBackToWordBank(wordBankItem) {
+export const moveBackToWordBank = (wordBankItem) => {
   return ((dispatch, getState) => {
     const {
       wordAlignmentReducer: {
@@ -63,7 +63,7 @@ export function moveBackToWordBank(wordBankItem) {
     const { chapter, verse } = contextId.reference;
     let _alignmentData = JSON.parse(JSON.stringify(alignmentData));
     let {alignments, wordBank} = _alignmentData[chapter][verse];
-    let currentVerse = targetLanguage[chapter][verse];
+    let currentVerse = stringHelpers.tokenize(targetLanguage[chapter][verse]).join(' ');
 
     alignments = removeWordBankItemFromAlignments(wordBankItem, alignments, currentVerse);
     wordBank = addWordBankItemToWordBank(wordBank, wordBankItem, currentVerse);
@@ -72,17 +72,17 @@ export function moveBackToWordBank(wordBankItem) {
 
     dispatch(WordAlignmentLoadActions.updateAlignmentData(_alignmentData));
   });
-}
+};
 
-export function addWordBankItemToAlignments(wordBankItem, alignments, alignmentIndex, currentVerseText) {
+export const addWordBankItemToAlignments = (wordBankItem, alignments, alignmentIndex, currentVerseText) => {
   let alignment = alignments[alignmentIndex];
   alignment.bottomWords.push(wordBankItem);
   alignment.bottomWords = WordAlignmentHelpers.sortWordObjectsByString(alignment.bottomWords, currentVerseText);
   alignments[alignmentIndex] = alignment;
   return alignments;
-}
+};
 
-export function removeWordBankItemFromAlignments(wordBankItem, alignments) {
+export const removeWordBankItemFromAlignments = (wordBankItem, alignments) => {
   const {alignmentIndex} = wordBankItem;
   let alignment = alignments[alignmentIndex];
   delete wordBankItem.alignmentIndex;
@@ -92,7 +92,7 @@ export function removeWordBankItemFromAlignments(wordBankItem, alignments) {
   alignment.bottomWords = bottomWords;
   alignments[alignmentIndex] = alignment;
   return alignments;
-}
+};
 /**
  * @description - removes a source word from the word bank.
  * @param {Object} wordBank
@@ -151,11 +151,13 @@ export const moveTopWordItemToAlignment = (topWordItem, fromAlignmentIndex, toAl
     // if only one topWord in the fromAlignments, merge them
     let verseAlignmentData = { alignments, wordBank }; // if it's the same alignmentIndex then it needs unmerged
     const sameAlignmentIndex = fromAlignmentIndex === toAlignmentIndex;
-    if (!sameAlignmentIndex || fromAlignments.topWords.length === 1 && toAlignments.topWords.length > 0) {
+    const performUnmerge = sameAlignmentIndex && fromAlignments.topWords.length > 1;
+    const performMerge = !sameAlignmentIndex && fromAlignments.topWords.length === 1 && toAlignments.topWords.length > 0;
+    if (performUnmerge) { // if more than one topWord in fromAlignments or moving to an empty alignment, move topWord, and move bottomWords of fromAlignments to wordBank
+      verseAlignmentData = unmergeAlignments(topWordItem, alignments, wordBank, fromAlignmentIndex, topWordVerseData, bottomWordVerseText);
+    } else if (performMerge) {
       alignments = mergeAlignments(alignments, fromAlignmentIndex, toAlignmentIndex, topWordVerseData, bottomWordVerseText);
       verseAlignmentData = { alignments, wordBank };
-    } else { // if more than one topWord in fromAlignments or moving to an empty alignment, move topWord, and move bottomWords of fromAlignments to wordBank
-      verseAlignmentData = unmergeAlignments(topWordItem, alignments, wordBank, fromAlignmentIndex, topWordVerseData, bottomWordVerseText);
     }
     // update the alignmentData
     _alignmentData[chapter][verse] = verseAlignmentData;
@@ -209,7 +211,6 @@ export const unmergeAlignments = (topWordItem, alignments, wordBank, fromAlignme
   // overwrite the alignments
   alignments[toAlignmentIndex] = toAlignments;
   alignments[fromAlignmentIndex] = fromAlignments;
-
   // sort verseAlignmentData
   alignments = sortAlignmentsByTopWordVerseData(alignments, topWordVerseData);
   return { alignments, wordBank };
